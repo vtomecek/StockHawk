@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/layout_list_item_quote"
     android:layout_width="match_parent"
     android:layout_height="?android:attr/listPreferredItemHeight"
     android:gravity="center_vertical"
@@ -12,7 +11,7 @@
     android:paddingEnd="16dp">
 
     <TextView
-        android:id="@+id/symbol"
+        android:id="@+id/list_item_history_date"
         style="@style/StockSymbolTextStyle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -26,23 +25,11 @@
         android:gravity="end">
 
         <TextView
-            android:id="@+id/price"
+            android:id="@+id/list_item_history_price"
             style="@style/BidPriceTextStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="10sp"
             tools:text="1000.00" />
-
-        <TextView
-            android:id="@+id/change"
-            style="@style/PercentChangeTextStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:background="@drawable/percent_change_pill_green"
-            android:paddingLeft="3dp"
-            android:paddingRight="3dp"
-            android:paddingStart="3dp"
-            android:paddingEnd="3dp"
-            tools:text="100%" />
     </LinearLayout>
 </LinearLayout>

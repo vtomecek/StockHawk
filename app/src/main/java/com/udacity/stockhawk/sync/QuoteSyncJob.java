@@ -8,9 +8,16 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.AndroidRuntimeException;
+import android.widget.Toast;
 
+import com.udacity.stockhawk.R;
 import com.udacity.stockhawk.data.Contract;
 import com.udacity.stockhawk.data.PrefUtils;
+import com.udacity.stockhawk.mock.MockUtils;
+import com.udacity.stockhawk.ui.MainActivity;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,7 +38,7 @@ import yahoofinance.quotes.stock.StockQuote;
 public final class QuoteSyncJob {
 
     private static final int ONE_OFF_ID = 2;
-    private static final String ACTION_DATA_UPDATED = "com.udacity.stockhawk.ACTION_DATA_UPDATED";
+    public static final String ACTION_DATA_UPDATED = "com.udacity.stockhawk.ACTION_DATA_UPDATED";
     private static final int PERIOD = 300000;
     private static final int INITIAL_BACKOFF = 10000;
     private static final int PERIODIC_ID = 1;
@@ -40,7 +47,7 @@ public final class QuoteSyncJob {
     private QuoteSyncJob() {
     }
 
-    static void getQuotes(Context context) {
+    static void getQuotes(final Context context) {
 
         Timber.d("Running sync job");
 
@@ -75,13 +82,32 @@ public final class QuoteSyncJob {
                 Stock stock = quotes.get(symbol);
                 StockQuote quote = stock.getQuote();
 
+                if (quote.getPrice() == null) {
+                    Handler mHandler = new Handler(Looper.getMainLooper());
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Toast.makeText(context.getApplicationContext(),
+                                    R.string.toast_no_ticker, Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    PrefUtils.removeStock(context, symbol);
+                    context.getContentResolver().delete(Contract.Quote.makeUriForStock(symbol), null, null);
+                    continue;
+                }
+
                 float price = quote.getPrice().floatValue();
                 float change = quote.getChange().floatValue();
                 float percentChange = quote.getChangeInPercent().floatValue();
 
                 // WARNING! Don't request historical data for a stock that doesn't exist!
                 // The request will hang forever X_x
-                List<HistoricalQuote> history = stock.getHistory(from, to, Interval.WEEKLY);
+                //List<HistoricalQuote> history = stock.getHistory(from, to, Interval.WEEKLY);
+                // Note for reviewer:
+                // Due to the problems with Yahoo API we have commented the line above
+                // and included this one to fetch the history from MockUtils
+                // This should be enough as to develop and review the API is down
+                List<HistoricalQuote> history = MockUtils.getHistory();
 
                 StringBuilder historyBuilder = new StringBuilder();
 
@@ -111,9 +137,14 @@ public final class QuoteSyncJob {
                             quoteCVs.toArray(new ContentValues[quoteCVs.size()]));
 
             Intent dataUpdatedIntent = new Intent(ACTION_DATA_UPDATED);
+
+            // TO-DO
+            //Intent dataUpdatedIntent = new Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
             context.sendBroadcast(dataUpdatedIntent);
 
         } catch (IOException exception) {
+            Timber.e(exception, "Error fetching stock quotes");
+        } catch (AndroidRuntimeException exception) {
             Timber.e(exception, "Error fetching stock quotes");
         }
     }
